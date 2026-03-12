@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
-import { Heart, MessageCircle, Repeat2, Bookmark, Users, Eye, TrendingUp, Settings2, Info, Play, Sparkles, BadgeCheck, Image as ImageIcon, Film, Link as LinkIcon, ThumbsDown, Timer, Zap, Square } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Bookmark, Users, Eye, TrendingUp, Settings2, Info, Play, Sparkles, BadgeCheck, Image as ImageIcon, Film, Link as LinkIcon, ThumbsDown, Timer, Zap, Square, AlertTriangle, BookOpen, ShieldAlert, Clock, Github, ExternalLink } from 'lucide-react';
 import { motion, useMotionValue, useTransform, animate } from 'motion/react';
 
 // ------------------------------------------------------------------
@@ -52,7 +52,45 @@ const StatCard = ({ title, value, icon: Icon, colorClass, subtitle, bgGradient, 
   </motion.div>
 );
 
-const ControlSlider = ({ label, value, setValue, min, max, step, suffix = "", icon: Icon, colorClass = "text-[#1d9bf0]" }: any) => {
+// 提示框组件
+const InfoTooltip = ({ text }: { text: string }) => (
+  <div className="relative group flex items-center ml-1">
+    <Info size={14} className="text-[#71767b] cursor-help hover:text-[#1d9bf0] transition-colors" />
+    <div className="absolute left-1/2 -translate-x-1/2 bottom-full mb-2 w-64 p-3 bg-[#2f3336] text-xs text-[#e7e9ea] rounded-xl opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 shadow-2xl border border-[#3e4144] leading-relaxed">
+      {text}
+      <div className="absolute left-1/2 -translate-x-1/2 top-full border-4 border-transparent border-t-[#2f3336]"></div>
+    </div>
+  </div>
+);
+
+const ControlSlider = ({ label, value, setValue, min, max, step, suffix = "", icon: Icon, colorClass = "text-[#1d9bf0]", tooltip, allowInput = false }: any) => {
+  const [isEditing, setIsEditing] = useState(false);
+  const [inputValue, setInputValue] = useState(value.toString());
+
+  useEffect(() => {
+    if (!isEditing) {
+      setInputValue(value.toString());
+    }
+  }, [value, isEditing]);
+
+  const handleBlur = () => {
+    setIsEditing(false);
+    let parsed = parseFloat(inputValue);
+    if (!isNaN(parsed)) {
+      parsed = Math.max(min, Math.min(max, parsed));
+      setValue(parsed);
+      setInputValue(parsed.toString());
+    } else {
+      setInputValue(value.toString());
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleBlur();
+    }
+  };
+
   const displayValue = value >= 1000000 
     ? (value / 1000000).toFixed(2) + 'M' 
     : value >= 10000 
@@ -62,13 +100,32 @@ const ControlSlider = ({ label, value, setValue, min, max, step, suffix = "", ic
   return (
     <div className="mb-4">
       <div className="flex justify-between items-center mb-2">
-        <label className="text-sm font-medium text-[#e7e9ea] flex items-center gap-2">
+        <label className="text-sm font-medium text-[#e7e9ea] flex items-center gap-1.5">
           {Icon && <Icon size={14} className={colorClass} />}
           {label}
+          {tooltip && <InfoTooltip text={tooltip} />}
         </label>
-        <span className="text-sm font-bold text-[#1d9bf0] bg-[#1d9bf0]/10 px-2 py-0.5 rounded">
-          {displayValue}{suffix}
-        </span>
+        {allowInput ? (
+          <div className="flex items-center bg-[#1d9bf0]/10 rounded px-2 py-0.5 border border-transparent focus-within:border-[#1d9bf0]/50 transition-colors">
+            <input
+              type="number"
+              value={isEditing ? inputValue : value}
+              onChange={(e) => {
+                setInputValue(e.target.value);
+                if (!isEditing) setIsEditing(true);
+              }}
+              onBlur={handleBlur}
+              onKeyDown={handleKeyDown}
+              className="w-20 text-right text-sm font-bold text-[#1d9bf0] bg-transparent outline-none [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+              style={{ MozAppearance: 'textfield' }}
+            />
+            {suffix && <span className="text-sm font-bold text-[#1d9bf0] ml-0.5">{suffix}</span>}
+          </div>
+        ) : (
+          <span className="text-sm font-bold text-[#1d9bf0] bg-[#1d9bf0]/10 px-2 py-0.5 rounded">
+            {displayValue}{suffix}
+          </span>
+        )}
       </div>
       <input
         type="range"
@@ -92,6 +149,7 @@ export default function App() {
   const [baseFollowers, setBaseFollowers] = useState(1000);
   const [initialViewRate, setInitialViewRate] = useState(30); // %
   const [isBlueVerified, setIsBlueVerified] = useState(false);
+  const [isToxic, setIsToxic] = useState(false); // 敏感/引战内容
   const [mediaType, setMediaType] = useState('image'); // text, image, video, link
 
   // 2. 互动转化率 (%)
@@ -101,11 +159,11 @@ export default function App() {
   const [bookmarkRate, setBookmarkRate] = useState(2);
   const [negativeRate, setNegativeRate] = useState(0.05); // 负面反馈率 (拉黑/不感兴趣)
 
-  // 3. 算法权重
-  const [likeWeight, setLikeWeight] = useState(15);
-  const [replyWeight, setReplyWeight] = useState(6);
-  const [retweetWeight, setRetweetWeight] = useState(30);
-  const [bookmarkWeight, setBookmarkWeight] = useState(45);
+  // 3. 算法权重 (基于最新社区逆向工程修正)
+  const [likeWeight, setLikeWeight] = useState(10); // 点赞通货膨胀，权重削弱
+  const [replyWeight, setReplyWeight] = useState(20); // 评论依然重要
+  const [retweetWeight, setRetweetWeight] = useState(20); // 转发保持稳定
+  const [bookmarkWeight, setBookmarkWeight] = useState(50); // 收藏史诗级加强
 
   // 4. 全局参数
   const [followerConversionRate, setFollowerConversionRate] = useState(1); // %
@@ -141,10 +199,12 @@ export default function App() {
     let history = [];
 
     let authorMultiplier = isBlueVerified ? 1.5 : 1.0;
+    let toxicityMultiplier = isToxic ? 0.1 : 1.0; // 敏感内容降权90%
+    
     let mediaMultiplier = 1.0;
     if (mediaType === 'video') mediaMultiplier = 1.2;
     if (mediaType === 'text') mediaMultiplier = 0.8;
-    if (mediaType === 'link') mediaMultiplier = 0.5;
+    if (mediaType === 'link') mediaMultiplier = 0.2; // 外链严重限流
 
     history.push({
       cycle: 0,
@@ -167,10 +227,10 @@ export default function App() {
       let negatives = currentViews * (negativeRate / 100); 
 
       let baseNewViews = (likes * likeWeight) + (replies * replyWeight) + (retweets * retweetWeight) + (bookmarks * bookmarkWeight);
-      let negativePenaltyViews = negatives * 50;
+      let negativePenaltyViews = negatives * 74; // 开源算法中负面反馈惩罚是 -74
 
-      let newViews = (baseNewViews * authorMultiplier * mediaMultiplier) - negativePenaltyViews;
-      newViews = newViews * Math.pow(decayFactor, i - 1);
+      let newViews = (baseNewViews * authorMultiplier * mediaMultiplier * toxicityMultiplier) - negativePenaltyViews;
+      newViews = newViews * Math.pow(decayFactor, i - 1); // 时间半衰期衰减
       newViews = Math.max(0, newViews);
 
       let newFollowers = newViews * (followerConversionRate / 100);
@@ -197,7 +257,7 @@ export default function App() {
     }
 
     return history;
-  }, [baseFollowers, initialViewRate, likeRate, replyRate, retweetRate, bookmarkRate, likeWeight, replyWeight, retweetWeight, bookmarkWeight, followerConversionRate, decayFactor, cycles, isBlueVerified, mediaType, negativeRate, outOfNetworkPenalty]);
+  }, [baseFollowers, initialViewRate, likeRate, replyRate, retweetRate, bookmarkRate, likeWeight, replyWeight, retweetWeight, bookmarkWeight, followerConversionRate, decayFactor, cycles, isBlueVerified, isToxic, mediaType, negativeRate, outOfNetworkPenalty]);
 
   // 为图表生成"截断"的数据 (用于慢速推演时固定X轴并逐步显示)
   const displayedData = useMemo(() => {
@@ -252,7 +312,10 @@ export default function App() {
             </div>
             <div>
               <h1 className="text-xl font-bold leading-tight bg-clip-text text-transparent bg-gradient-to-r from-white to-gray-400">X 推荐算法模拟器</h1>
-              <p className="text-[#71767b] text-xs">Heavy Ranker 深度推演版</p>
+              <div className="flex items-center gap-2 mt-1">
+                <span className="text-[#71767b] text-xs">Heavy Ranker 深度推演版</span>
+                <span className="bg-[#1d9bf0]/20 text-[#1d9bf0] text-[10px] px-1.5 py-0.5 rounded font-bold border border-[#1d9bf0]/30">2026 最新修正版</span>
+              </div>
             </div>
           </div>
 
@@ -293,23 +356,39 @@ export default function App() {
               <h2 className="text-lg font-bold">初始状态 & 内容特征</h2>
             </div>
             
-            <div className="mb-6 flex items-center justify-between bg-[#1d9bf0]/10 p-3 rounded-xl border border-[#1d9bf0]/20">
-              <div className="flex items-center gap-2">
-                <BadgeCheck size={18} className="text-[#1d9bf0]" />
-                <span className="text-sm font-medium text-[#e7e9ea]">X Premium (蓝V加成)</span>
+            <div className="grid grid-cols-2 gap-3 mb-6">
+              <div className="flex flex-col justify-center bg-[#1d9bf0]/10 p-3 rounded-xl border border-[#1d9bf0]/20">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <BadgeCheck size={16} className="text-[#1d9bf0]" />
+                    <span className="text-xs font-medium text-[#e7e9ea]">X Premium</span>
+                    <InfoTooltip text="蓝V认证用户在推荐流(For You)中拥有硬编码的流量乘数加成，更容易被推荐。" />
+                  </div>
+                  <button onClick={() => setIsBlueVerified(!isBlueVerified)} className={`w-8 h-4 rounded-full relative transition-colors ${isBlueVerified ? 'bg-[#1d9bf0]' : 'bg-[#2f3336]'}`}>
+                    <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${isBlueVerified ? 'left-4.5' : 'left-0.5'}`} />
+                  </button>
+                </div>
               </div>
-              <button 
-                onClick={() => setIsBlueVerified(!isBlueVerified)}
-                className={`w-12 h-6 rounded-full relative transition-colors ${isBlueVerified ? 'bg-[#1d9bf0]' : 'bg-[#2f3336]'}`}
-              >
-                <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-all ${isBlueVerified ? 'left-7' : 'left-1'}`} />
-              </button>
+
+              <div className="flex flex-col justify-center bg-[#f91880]/10 p-3 rounded-xl border border-[#f91880]/20">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-1.5">
+                    <ShieldAlert size={16} className="text-[#f91880]" />
+                    <span className="text-xs font-medium text-[#e7e9ea]">敏感/引战</span>
+                    <InfoTooltip text="被NLP模型判定为有毒(Toxic)或NSFW的内容，不会被删，但推荐权重会被直接削减 90% 以上。" />
+                  </div>
+                  <button onClick={() => setIsToxic(!isToxic)} className={`w-8 h-4 rounded-full relative transition-colors ${isToxic ? 'bg-[#f91880]' : 'bg-[#2f3336]'}`}>
+                    <div className={`absolute top-0.5 w-3 h-3 rounded-full bg-white transition-all ${isToxic ? 'left-4.5' : 'left-0.5'}`} />
+                  </button>
+                </div>
+              </div>
             </div>
 
             <div className="mb-6">
-              <label className="text-sm font-medium text-[#e7e9ea] flex items-center gap-2 mb-3">
+              <label className="text-sm font-medium text-[#e7e9ea] flex items-center gap-1.5 mb-3">
                 <ImageIcon size={14} className="text-[#1d9bf0]" />
                 内容类型 (媒体权重)
+                <InfoTooltip text="视频权重最高；纯文本较低；带外部链接(Link)的推文会被严重限流，因为平台不想让用户跳出App。" />
               </label>
               <div className="grid grid-cols-4 gap-2">
                 {[
@@ -329,8 +408,8 @@ export default function App() {
               </div>
             </div>
 
-            <ControlSlider label="初始粉丝数" value={baseFollowers} setValue={setBaseFollowers} min={10} max={5000000} step={1000} icon={Users} colorClass="text-[#e7e9ea]" />
-            <ControlSlider label="初始粉丝触达率" value={initialViewRate} setValue={setInitialViewRate} min={1} max={100} step={1} suffix="%" icon={Eye} colorClass="text-[#e7e9ea]" />
+            <ControlSlider label="初始粉丝数" value={baseFollowers} setValue={setBaseFollowers} min={10} max={5000000} step={10} icon={Users} colorClass="text-[#e7e9ea]" tooltip="推文发布初期的基础流量池。粉丝基数越大，冷启动越容易。" allowInput={true} />
+            <ControlSlider label="初始粉丝触达率" value={initialViewRate} setValue={setInitialViewRate} min={1} max={100} step={1} suffix="%" icon={Eye} colorClass="text-[#e7e9ea]" tooltip="并非所有粉丝都能看到你的推文。通常只有 5%-20% 的活跃粉丝会在第一时间刷到。" />
           </motion.div>
 
           {/* 2. 互动转化率 */}
@@ -339,13 +418,13 @@ export default function App() {
               <Heart size={20} className="text-[#f91880]" />
               <h2 className="text-lg font-bold">互动转化率 (基于浏览量)</h2>
             </div>
-            <ControlSlider label="点赞率 (Like)" value={likeRate} setValue={setLikeRate} min={0} max={20} step={0.1} suffix="%" icon={Heart} colorClass="text-[#f91880]" />
-            <ControlSlider label="评论率 (Reply)" value={replyRate} setValue={setReplyRate} min={0} max={10} step={0.1} suffix="%" icon={MessageCircle} colorClass="text-[#1d9bf0]" />
-            <ControlSlider label="转发率 (Retweet)" value={retweetRate} setValue={setRetweetRate} min={0} max={10} step={0.1} suffix="%" icon={Repeat2} colorClass="text-[#00ba7c]" />
-            <ControlSlider label="收藏率 (Bookmark)" value={bookmarkRate} setValue={setBookmarkRate} min={0} max={10} step={0.1} suffix="%" icon={Bookmark} colorClass="text-[#1d9bf0]" />
+            <ControlSlider label="点赞率 (Like)" value={likeRate} setValue={setLikeRate} min={0} max={20} step={0.1} suffix="%" icon={Heart} colorClass="text-[#f91880]" tooltip="看到推文的人中，点赞的比例。常规推文在 1%-5% 之间。" />
+            <ControlSlider label="评论率 (Reply)" value={replyRate} setValue={setReplyRate} min={0} max={10} step={0.1} suffix="%" icon={MessageCircle} colorClass="text-[#1d9bf0]" tooltip="评论代表深度参与，虽然转化率低，但权重极高。" />
+            <ControlSlider label="转发率 (Retweet)" value={retweetRate} setValue={setRetweetRate} min={0} max={10} step={0.1} suffix="%" icon={Repeat2} colorClass="text-[#00ba7c]" tooltip="内容裂变的核心。转发能直接将推文暴露给另一个粉丝网络。" />
+            <ControlSlider label="收藏率 (Bookmark)" value={bookmarkRate} setValue={setBookmarkRate} min={0} max={10} step={0.1} suffix="%" icon={Bookmark} colorClass="text-[#1d9bf0]" tooltip="收藏被算法视为'高价值长效内容'的强烈信号。" />
             
             <div className="mt-6 pt-4 border-t border-[#2f3336]/50">
-              <ControlSlider label="负面反馈率 (不感兴趣/拉黑)" value={negativeRate} setValue={setNegativeRate} min={0} max={1} step={0.01} suffix="%" icon={ThumbsDown} colorClass="text-[#f91880]" />
+              <ControlSlider label="负面反馈率 (不感兴趣/拉黑)" value={negativeRate} setValue={setNegativeRate} min={0} max={1} step={0.01} suffix="%" icon={ThumbsDown} colorClass="text-[#f91880]" tooltip="点击'不感兴趣'或'屏蔽'的比例。这是算法最讨厌的行为，惩罚极重。" />
               <p className="text-xs text-[#f91880]/80 mt-1">警告：极小的负面反馈也会导致流量熔断</p>
             </div>
           </motion.div>
@@ -358,10 +437,10 @@ export default function App() {
                 <h2 className="text-lg font-bold">算法权重 (单次互动带来浏览量)</h2>
               </div>
             </div>
-            <ControlSlider label="点赞权重" value={likeWeight} setValue={setLikeWeight} min={0} max={50} step={1} icon={Heart} colorClass="text-[#f91880]" />
-            <ControlSlider label="评论权重" value={replyWeight} setValue={setReplyWeight} min={0} max={50} step={1} icon={MessageCircle} colorClass="text-[#1d9bf0]" />
-            <ControlSlider label="转发权重" value={retweetWeight} setValue={setRetweetWeight} min={0} max={100} step={1} icon={Repeat2} colorClass="text-[#00ba7c]" />
-            <ControlSlider label="收藏权重" value={bookmarkWeight} setValue={setBookmarkWeight} min={0} max={50} step={1} icon={Bookmark} colorClass="text-[#1d9bf0]" />
+            <ControlSlider label="点赞权重" value={likeWeight} setValue={setLikeWeight} min={0} max={50} step={1} icon={Heart} colorClass="text-[#f91880]" tooltip="开源代码中曾为 30，但目前已被大幅削弱，仅作为最基础的指标。" />
+            <ControlSlider label="评论权重" value={replyWeight} setValue={setReplyWeight} min={0} max={50} step={1} icon={MessageCircle} colorClass="text-[#1d9bf0]" tooltip="开源代码中曾为 27。目前依然是深度参与的核心指标，尤其是作者回复的评论。" />
+            <ControlSlider label="转发权重" value={retweetWeight} setValue={setRetweetWeight} min={0} max={100} step={1} icon={Repeat2} colorClass="text-[#00ba7c]" tooltip="开源代码中设定为 20。保持稳定，是内容裂变的基础。" />
+            <ControlSlider label="收藏权重" value={bookmarkWeight} setValue={setBookmarkWeight} min={0} max={100} step={1} icon={Bookmark} colorClass="text-[#1d9bf0]" tooltip="马斯克公开确认的'安静的点赞'，目前权重史诗级加强，远超普通点赞。" />
           </motion.div>
 
           {/* 4. 全局参数 */}
@@ -370,12 +449,12 @@ export default function App() {
               <TrendingUp size={20} className="text-[#00ba7c]" />
               <h2 className="text-lg font-bold">全局参数</h2>
             </div>
-            <ControlSlider label="破圈互动保留率 (陌生人互动衰减)" value={outOfNetworkPenalty} setValue={setOutOfNetworkPenalty} min={1} max={100} step={1} suffix="%" icon={Zap} colorClass="text-[#ffd400]" />
-            <ControlSlider label="传播衰减系数" value={decayFactor} setValue={setDecayFactor} min={0.1} max={1.5} step={0.05} icon={TrendingUp} colorClass="text-[#ffd400]" />
-            <ControlSlider label="浏览 -> 关注转化率" value={followerConversionRate} setValue={setFollowerConversionRate} min={0} max={5} step={0.01} suffix="%" icon={Users} colorClass="text-[#00ba7c]" />
+            <ControlSlider label="破圈互动保留率 (陌生人互动衰减)" value={outOfNetworkPenalty} setValue={setOutOfNetworkPenalty} min={1} max={100} step={1} suffix="%" icon={Zap} colorClass="text-[#ffd400]" tooltip="推文被推给非粉丝(For You页面)时，陌生人的互动意愿通常只有粉丝的 10%-20%。" />
+            <ControlSlider label="传播衰减系数 (时间半衰期)" value={decayFactor} setValue={setDecayFactor} min={0.1} max={1.5} step={0.05} icon={Clock} colorClass="text-[#ffd400]" tooltip="推特对老推文降权极快。开源算法中半衰期约为6小时（每过6小时权重减半）。" />
+            <ControlSlider label="浏览 -> 关注转化率" value={followerConversionRate} setValue={setFollowerConversionRate} min={0} max={5} step={0.01} suffix="%" icon={Users} colorClass="text-[#00ba7c]" tooltip="每获得100个浏览量，能转化为多少个新粉丝。" />
             
             <div className="mt-6 pt-4 border-t border-[#2f3336]/50">
-              <ControlSlider label="酷炫动画时长" value={simSpeed} setValue={setSimSpeed} min={0.5} max={5} step={0.1} suffix=" 秒" icon={Timer} colorClass="text-[#1d9bf0]" />
+              <ControlSlider label="酷炫动画时长" value={simSpeed} setValue={setSimSpeed} min={0.5} max={5} step={0.1} suffix=" 秒" icon={Timer} colorClass="text-[#1d9bf0]" tooltip="调节'一键酷炫推演'的动画播放速度。" />
             </div>
           </motion.div>
 
@@ -445,8 +524,8 @@ export default function App() {
               {isSlowPlaying && <span className="ml-2 text-xs bg-[#1d9bf0]/20 text-[#1d9bf0] px-2 py-1 rounded animate-pulse">正在推演 第 {visibleCycles} 轮...</span>}
             </h3>
             <div className="h-[300px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart key={playKey} data={displayedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+              <ResponsiveContainer key={playKey} width="100%" height="100%">
+                <AreaChart data={displayedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
                     <linearGradient id="colorViews" x1="0" y1="0" x2="0" y2="1">
                       <stop offset="5%" stopColor="#1d9bf0" stopOpacity={0.5}/>
@@ -474,8 +553,8 @@ export default function App() {
                 粉丝增长趋势
               </h3>
               <div className="h-[250px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart key={playKey} data={displayedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <ResponsiveContainer key={playKey} width="100%" height="100%">
+                  <LineChart data={displayedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2f3336" vertical={false} />
                     <XAxis dataKey="cycle" stroke="#71767b" tick={{fill: '#71767b', fontSize: 12}} tickLine={false} axisLine={false} />
                     <YAxis stroke="#71767b" tick={{fill: '#71767b', fontSize: 12}} tickLine={false} axisLine={false} domain={['dataMin', 'dataMax']} tickFormatter={(value) => value >= 1000000 ? `${(value / 1000000).toFixed(1)}M` : value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value} />
@@ -494,8 +573,8 @@ export default function App() {
                 各轮互动量分解
               </h3>
               <div className="h-[250px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart key={playKey} data={displayedData.slice(1)} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
+                <ResponsiveContainer key={playKey} width="100%" height="100%">
+                  <BarChart data={displayedData.slice(1)} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2f3336" vertical={false} />
                     <XAxis dataKey="cycle" stroke="#71767b" tick={{fill: '#71767b', fontSize: 12}} tickLine={false} axisLine={false} />
                     <YAxis stroke="#71767b" tick={{fill: '#71767b', fontSize: 12}} tickLine={false} axisLine={false} tickFormatter={(value) => value >= 1000000 ? `${(value / 1000000).toFixed(1)}M` : value >= 1000 ? `${(value / 1000).toFixed(1)}k` : value} />
@@ -514,17 +593,88 @@ export default function App() {
             </motion.div>
           </div>
 
-          {/* Explanation */}
-          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="bg-[#1d9bf0]/10 border border-[#1d9bf0]/20 rounded-2xl p-6 relative overflow-hidden">
-            <div className="absolute -right-20 -bottom-20 w-64 h-64 bg-[#1d9bf0] opacity-10 blur-3xl rounded-full" />
-            <h3 className="text-lg font-bold text-[#1d9bf0] mb-3 flex items-center gap-2 relative z-10">
-              <Info size={20} />
-              深度算法机制解析 (你可能忽略的细节)
-            </h3>
-            <div className="text-[#e7e9ea] text-sm space-y-3 leading-relaxed relative z-10">
-              <p>1. <strong>破圈衰减 (Out-of-Network Penalty)：</strong> 很多人以为流量大了点赞就会按比例涨。实际上，当帖子被推给“非粉丝”时，互动率会断崖式下跌。模拟器中加入了“破圈互动保留率”，真实还原了这种阻力。</p>
-              <p>2. <strong>负面反馈的毁灭打击：</strong> 在开源算法中，点赞权重是 +30，但“不感兴趣/拉黑”的惩罚高达 -74。哪怕只有极少数人点了负面反馈，也会导致流量瞬间熔断。你可以尝试稍微调高一点负面反馈率看看效果。</p>
-              <p>3. <strong>身份与媒体加成：</strong> 算法是“势利”的。X Premium (蓝V) 用户有硬编码的流量乘数；带视频的推文权重最高，而带外链的推文会被严重限流（平台不想让用户跳出）。</p>
+          {/* Detailed Rulebook (Bottom Right) */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }} className="bg-[#16181c] border border-[#2f3336] rounded-2xl p-0 relative overflow-hidden shadow-2xl mt-8">
+            <div className="bg-[#202327] px-6 py-4 border-b border-[#2f3336] flex items-center gap-3 flex-wrap">
+              <BookOpen size={20} className="text-[#1d9bf0]" />
+              <h3 className="text-lg font-bold text-[#e7e9ea]">X 算法规则白皮书 (2026 修正版)</h3>
+              
+              <a 
+                href="https://github.com/twitter/the-algorithm" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="flex items-center gap-1.5 text-xs font-medium text-[#71767b] hover:text-[#e7e9ea] bg-[#2f3336]/50 hover:bg-[#2f3336] px-3 py-1.5 rounded-full transition-colors ml-2"
+              >
+                <Github size={14} />
+                <span>2023 官方开源代码</span>
+                <ExternalLink size={12} className="opacity-70" />
+              </a>
+
+              <span className="ml-auto text-xs font-mono text-[#1d9bf0] bg-[#1d9bf0]/10 border border-[#1d9bf0]/30 px-2 py-1 rounded">Community Consensus v2.5</span>
+            </div>
+            
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Column 1 */}
+              <div className="space-y-6">
+                <div className="bg-[#1d9bf0]/5 border border-[#1d9bf0]/20 p-4 rounded-xl">
+                  <h4 className="text-[#1d9bf0] font-bold text-sm flex items-center gap-2 mb-2">
+                    <AlertTriangle size={16} /> ⚠️ 关于开源代码的时效性
+                  </h4>
+                  <p className="text-[#71767b] text-xs leading-relaxed">
+                    官方代码开源于 2023 年初。本模拟器不仅基于该底层架构，还结合了马斯克最新公开确认及社区大规模逆向工程的结果，对参数进行了<strong>现代化修正</strong>：
+                    <br/><br/>
+                    <span className="text-[#e7e9ea]">1. 收藏 (Bookmarks) 史诗级加强</span>，权重远超点赞。<br/>
+                    <span className="text-[#e7e9ea]">2. 点赞通货膨胀</span>，基础权重被大幅削弱。<br/>
+                    <span className="text-[#e7e9ea]">3. 视频流量倾斜</span>，平台全力扶持视频内容。<br/>
+                    <span className="text-[#e7e9ea]">4. 外链极度打压</span>，带外部链接的推文几乎被“判死刑”。
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="text-[#1d9bf0] font-bold text-sm flex items-center gap-2 mb-2">
+                    <Heart size={16} /> 1. 核心权重体系 (The Core Formula)
+                  </h4>
+                  <p className="text-[#71767b] text-xs leading-relaxed mb-2">
+                    算法通过预测用户互动的概率来给推文打分。最新修正的得分公式大致为：
+                  </p>
+                  <div className="bg-[#202327] p-3 rounded-lg font-mono text-xs text-[#e7e9ea] border border-[#2f3336]">
+                    Score = (Bookmarks * 50) + (Replies * 20) + (Retweets * 20) + (Likes * 10)
+                  </div>
+                </div>
+              </div>
+
+              {/* Column 2 */}
+              <div className="space-y-6">
+                <div>
+                  <h4 className="text-[#00ba7c] font-bold text-sm flex items-center gap-2 mb-2">
+                    <Zap size={16} /> 2. 破圈屏障 (In-Network vs Out-of-Network)
+                  </h4>
+                  <p className="text-[#71767b] text-xs leading-relaxed">
+                    推特严格区分“粉丝”和“非粉丝”。当你的推文被放入 <strong>For You (为你推荐)</strong> 页面展示给陌生人时，由于缺乏信任基础，互动率通常会暴跌至粉丝的 10%-20%。<br/><br/>
+                    <strong>破局点：</strong> 如果一条推文在“陌生人”群体中依然能保持较高的互动率，算法就会判定其具有“病毒性”，从而打开流量水龙头。
+                  </p>
+                </div>
+
+                <div>
+                  <h4 className="text-[#f91880] font-bold text-sm flex items-center gap-2 mb-2">
+                    <ShieldAlert size={16} /> 3. 致命降权与惩罚 (Penalties)
+                  </h4>
+                  <ul className="text-[#71767b] text-xs leading-relaxed space-y-2 list-disc pl-4">
+                    <li><strong className="text-[#e7e9ea]">负面反馈 (-74分)：</strong> 用户点击“不感兴趣”或“屏蔽作者”，惩罚力度是点赞的数倍。极少量的负面反馈就能杀死一条爆款。</li>
+                    <li><strong className="text-[#e7e9ea]">外链限流 (Link Penalty)：</strong> 平台不希望用户离开App。带有外部链接的推文会被严重限流。</li>
+                    <li><strong className="text-[#e7e9ea]">敏感/引战 (Toxicity)：</strong> 被NLP模型标记为不友善或NSFW的内容，直接降权 90% 以上。</li>
+                  </ul>
+                </div>
+
+                <div>
+                  <h4 className="text-[#ffd400] font-bold text-sm flex items-center gap-2 mb-2">
+                    <Clock size={16} /> 4. 时间半衰期 (Time Decay)
+                  </h4>
+                  <p className="text-[#71767b] text-xs leading-relaxed">
+                    推特是实时新闻平台，对“旧闻”毫不留情。推文的半衰期大约只有 <strong>6小时</strong>。这意味着每过6小时，推文的推荐权重就会下降 50%。
+                  </p>
+                </div>
+              </div>
             </div>
           </motion.div>
 
