@@ -1,0 +1,5 @@
+{
+  "name": "X Recommendation Simulator",
+  "description": "A simulator to visualize how X's recommendation algorithm amplifies views and followers based on engagement rates.",
+  "requestFramePermissions": []
+}
