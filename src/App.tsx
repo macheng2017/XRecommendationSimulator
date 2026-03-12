@@ -544,7 +544,7 @@ export default function App() {
               {t.charts.impressionTrend}
               {isSlowPlaying && <span className="ml-2 text-xs bg-[#1d9bf0]/20 text-[#1d9bf0] px-2 py-1 rounded animate-pulse">{lang === 'zh' ? `正在推演 第 ${visibleCycles} 轮...` : `Simulating Cycle ${visibleCycles}...`}</span>}
             </h3>
-            <div className="h-[300px] w-full">
+            <div className="h-[300px] w-full min-h-[300px] min-w-0">
               <ResponsiveContainer key={playKey} width="100%" height="100%">
                 <AreaChart data={displayedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                   <defs>
@@ -573,7 +573,7 @@ export default function App() {
                 <Users size={20} className="text-[#00ba7c]" />
                 {lang === 'zh' ? '粉丝增长趋势' : 'Follower Growth Trend'}
               </h3>
-              <div className="h-[250px] w-full">
+              <div className="h-[250px] w-full min-h-[250px] min-w-0">
                 <ResponsiveContainer key={playKey} width="100%" height="100%">
                   <LineChart data={displayedData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2f3336" vertical={false} />
@@ -593,7 +593,7 @@ export default function App() {
                 <Heart size={20} className="text-[#f91880]" />
                 {t.charts.engagementComparison}
               </h3>
-              <div className="h-[250px] w-full">
+              <div className="h-[250px] w-full min-h-[250px] min-w-0">
                 <ResponsiveContainer key={playKey} width="100%" height="100%">
                   <BarChart data={displayedData.slice(1)} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2f3336" vertical={false} />
