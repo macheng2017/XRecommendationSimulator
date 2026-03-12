@@ -774,6 +774,35 @@ export default function App() {
 
         </div>
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-[#2f3336] mt-12 py-8 bg-[#000000]">
+        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="text-[#71767b] text-sm">
+            © {new Date().getFullYear()} X Recommendation Simulator.
+          </div>
+          <div className="flex items-center gap-6">
+            <a 
+              href="https://github.com/macheng2017/XRecommendationSimulator" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-[#71767b] hover:text-[#e7e9ea] transition-colors text-sm"
+            >
+              <Github size={18} />
+              <span>GitHub</span>
+            </a>
+            <a 
+              href="https://x.com/mac20777" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-[#71767b] hover:text-[#1d9bf0] transition-colors text-sm"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true" className="w-[18px] h-[18px] fill-current"><g><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"></path></g></svg>
+              <span>@mac20777</span>
+            </a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
