@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, AreaChart, Area, BarChart, Bar } from 'recharts';
-import { Heart, MessageCircle, Repeat2, Bookmark, Users, Eye, TrendingUp, Settings2, Info, Play, Sparkles, BadgeCheck, Image as ImageIcon, Film, Link as LinkIcon, ThumbsDown, Timer, Zap, Square, AlertTriangle, BookOpen, ShieldAlert, Clock, Github, ExternalLink } from 'lucide-react';
+import { Heart, MessageCircle, Repeat2, Bookmark, Users, Eye, TrendingUp, Settings2, Info, Play, Sparkles, BadgeCheck, Image as ImageIcon, Film, Link as LinkIcon, ThumbsDown, Timer, Zap, Square, AlertTriangle, BookOpen, ShieldAlert, Clock, Github, ExternalLink, Lightbulb, CheckCircle2, XCircle } from 'lucide-react';
 import { motion, useMotionValue, useTransform, animate } from 'motion/react';
 
 // ------------------------------------------------------------------
@@ -674,6 +674,91 @@ export default function App() {
                     推特是实时新闻平台，对“旧闻”毫不留情。推文的半衰期大约只有 <strong>6小时</strong>。这意味着每过6小时，推文的推荐权重就会下降 50%。
                   </p>
                 </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Novice Guide (Bottom Right) */}
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.6 }} className="bg-[#16181c] border border-[#2f3336] rounded-2xl p-0 relative overflow-hidden shadow-2xl mt-8">
+            <div className="bg-[#202327] px-6 py-4 border-b border-[#2f3336] flex items-center gap-3">
+              <Lightbulb size={20} className="text-[#ffd400]" />
+              <h3 className="text-lg font-bold text-[#e7e9ea]">新手发推指南 (Dos & Don'ts)</h3>
+              <span className="ml-auto text-xs font-medium text-[#71767b]">基于算法推演的实战建议</span>
+            </div>
+            
+            <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Dos */}
+              <div className="space-y-4">
+                <h4 className="text-[#00ba7c] font-bold text-sm flex items-center gap-2 border-b border-[#2f3336] pb-2">
+                  <CheckCircle2 size={16} /> 提升效果的好习惯 (Dos)
+                </h4>
+                <ul className="space-y-4">
+                  <li className="flex gap-3">
+                    <div className="mt-0.5 text-[#00ba7c]"><Bookmark size={14} /></div>
+                    <div>
+                      <strong className="text-[#e7e9ea] text-sm block mb-1">引导收藏 (Bookmarks)</strong>
+                      <p className="text-[#71767b] text-xs leading-relaxed">算法目前最看重收藏。发布有长效价值、值得反复查看的内容（如干货长文、资源汇总、工具推荐），能获得极高的算法加权。</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <div className="mt-0.5 text-[#00ba7c]"><Film size={14} /></div>
+                    <div>
+                      <strong className="text-[#e7e9ea] text-sm block mb-1">多发原生视频/图文</strong>
+                      <p className="text-[#71767b] text-xs leading-relaxed">平台大力扶持原生多媒体内容。相比纯文本，带图或视频的推文在初始曝光和“为你推荐”流中拥有更高的基础权重。</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <div className="mt-0.5 text-[#00ba7c]"><MessageCircle size={14} /></div>
+                    <div>
+                      <strong className="text-[#e7e9ea] text-sm block mb-1">积极互动与回复</strong>
+                      <p className="text-[#71767b] text-xs leading-relaxed">推文发布后的前几个小时是黄金期。积极回复评论区的留言，能大幅增加推文的生命周期，并向算法释放“高参与度”信号。</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <div className="mt-0.5 text-[#00ba7c]"><BadgeCheck size={14} /></div>
+                    <div>
+                      <strong className="text-[#e7e9ea] text-sm block mb-1">购买蓝V认证 (X Premium)</strong>
+                      <p className="text-[#71767b] text-xs leading-relaxed">官方明确的流量加权。不仅在“为你推荐”中更容易被分发，在别人的评论区也会获得更高的展示优先级。</p>
+                    </div>
+                  </li>
+                </ul>
+              </div>
+
+              {/* Don'ts */}
+              <div className="space-y-4">
+                <h4 className="text-[#f91880] font-bold text-sm flex items-center gap-2 border-b border-[#2f3336] pb-2">
+                  <XCircle size={16} /> 影响效果的坏习惯 (Don'ts)
+                </h4>
+                <ul className="space-y-4">
+                  <li className="flex gap-3">
+                    <div className="mt-0.5 text-[#f91880]"><LinkIcon size={14} /></div>
+                    <div>
+                      <strong className="text-[#e7e9ea] text-sm block mb-1">首条推文带外链</strong>
+                      <p className="text-[#71767b] text-xs leading-relaxed">平台极度反感用户离开App。带外链的推文会被严重限流。如果必须发链接，请放在评论区，或者先发纯文本积累流量后再修改加上链接。</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <div className="mt-0.5 text-[#f91880]"><ShieldAlert size={14} /></div>
+                    <div>
+                      <strong className="text-[#e7e9ea] text-sm block mb-1">负面/引战内容 (Toxicity)</strong>
+                      <p className="text-[#71767b] text-xs leading-relaxed">算法对“不感兴趣”、“屏蔽”等负面反馈的惩罚是致命的（权重扣减极大）。避免使用容易被系统判定为敏感或引战的词汇。</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <div className="mt-0.5 text-[#f91880]"><Clock size={14} /></div>
+                    <div>
+                      <strong className="text-[#e7e9ea] text-sm block mb-1">错峰发推 (Bad Timing)</strong>
+                      <p className="text-[#71767b] text-xs leading-relaxed">推文半衰期极短（约6小时）。在你的粉丝最不活跃的时间发推，会导致冷启动失败，无法积累足够的初始互动进入下一个流量池。</p>
+                    </div>
+                  </li>
+                  <li className="flex gap-3">
+                    <div className="mt-0.5 text-[#f91880]"><Eye size={14} /></div>
+                    <div>
+                      <strong className="text-[#e7e9ea] text-sm block mb-1">纯文字无排版 (Wall of Text)</strong>
+                      <p className="text-[#71767b] text-xs leading-relaxed">缺乏视觉焦点的长篇大论容易被快速划过，导致“停留时间”过短。停留时间也是算法衡量内容质量的重要隐性指标。</p>
+                    </div>
+                  </li>
+                </ul>
               </div>
             </div>
           </motion.div>
